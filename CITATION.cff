@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: "TFM dependency compatibility — local MLP baseline"
+type: software
+authors:
+  - family-names: "González Rodríguez"
+    given-names: "Augusto Javier"
+version: 0.1.0
+date-released: 2026-07-19
+license: MIT
+repository-code: "https://github.com/keyduu/tfm-dependency-baseline-mlp"
