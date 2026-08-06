@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: "González Rodríguez"
     given-names: "Augusto Javier"
-version: 0.1.0
-date-released: 2026-07-19
+version: 0.2.0
+date-released: 2026-08-06
 license: MIT
 repository-code: "https://github.com/keyduu/tfm-dependency-baseline-mlp"
