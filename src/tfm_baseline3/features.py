@@ -46,7 +46,16 @@ NUMERIC_FEATURES = [
 ]
 
 
-def raw_edge_features(data: pd.DataFrame) -> pd.DataFrame:
+def numeric_feature_names(*, include_vb_in_range: bool = True) -> list[str]:
+    if include_vb_in_range:
+        return list(NUMERIC_FEATURES)
+    return [feature for feature in NUMERIC_FEATURES if feature != "vb_in_range"]
+
+
+def raw_edge_features(
+    data: pd.DataFrame, *, include_vb_in_range: bool = True
+) -> pd.DataFrame:
+    numeric_features = numeric_feature_names(include_vb_in_range=include_vb_in_range)
     features = data[CATEGORICAL_FEATURES + NUMERIC_FEATURES[:6]].copy()
     va_time = pd.to_datetime(data["va_upload_time"], utc=True)
     vb_time = pd.to_datetime(data["vb_upload_time"], utc=True)
@@ -62,13 +71,15 @@ def raw_edge_features(data: pd.DataFrame) -> pd.DataFrame:
         [_specifier_features(value) for value in data["declared_range"]], index=data.index
     )
     features = pd.concat([features, specifiers], axis=1)
-    features["vb_in_range"] = data["vb_in_range"].astype(float)
+    if include_vb_in_range:
+        features["vb_in_range"] = data["vb_in_range"].astype(float)
     for column in ("va_size_bytes", "vb_size_bytes"):
         features[column] = np.log1p(pd.to_numeric(features[column], errors="coerce").clip(lower=0))
-    return features[CATEGORICAL_FEATURES + NUMERIC_FEATURES]
+    return features[CATEGORICAL_FEATURES + numeric_features]
 
 
-def build_transformer() -> ColumnTransformer:
+def build_transformer(*, include_vb_in_range: bool = True) -> ColumnTransformer:
+    numeric_features = numeric_feature_names(include_vb_in_range=include_vb_in_range)
     numeric = Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())])
     categorical = Pipeline(
         [
@@ -78,7 +89,7 @@ def build_transformer() -> ColumnTransformer:
     )
     return ColumnTransformer(
         [
-            ("numeric", numeric, NUMERIC_FEATURES),
+            ("numeric", numeric, numeric_features),
             ("categorical", categorical, CATEGORICAL_FEATURES),
         ]
     )

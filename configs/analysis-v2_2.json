@@ -1,0 +1,134 @@
+{
+  "comparison_metrics": [
+    "f1_incompatible",
+    "precision_at_10",
+    "precision_at_50",
+    "brier",
+    "log_loss",
+    "ece"
+  ],
+  "experiments": [
+    {
+      "name": "b3",
+      "root": "../../tfm-artifacts/results/baseline3-v2_2",
+      "prediction_pattern": "seed-{seed}/predictions/baseline3_test.parquet"
+    },
+    {
+      "name": "graphsage",
+      "root": "../../tfm-artifacts/results/gnn/graphsage-v2_2",
+      "prediction_pattern": "seed-{seed}/predictions/graphsage_test.parquet"
+    },
+    {
+      "name": "random_forest",
+      "root": "../../tfm-dependency-baseline2/results/baseline2-v2_2-seeds",
+      "prediction_pattern": "seed_{seed}/b2_1_random_forest/predictions/test.parquet"
+    },
+    {
+      "name": "xgboost",
+      "root": "../../tfm-dependency-baseline2/results/baseline2-v2_2-seeds",
+      "prediction_pattern": "seed_{seed}/b2_2_xgboost/predictions/test.parquet"
+    },
+    {
+      "name": "b3_no_vb_in_range",
+      "root": "../../tfm-artifacts/results/baseline3-v2_2-no-vb-in-range",
+      "prediction_pattern": "seed-{seed}/predictions/baseline3_test.parquet"
+    },
+    {
+      "name": "graphsage_no_vb_in_range",
+      "root": "../../tfm-artifacts/results/gnn/graphsage-v2_2-no-vb-in-range",
+      "prediction_pattern": "seed-{seed}/predictions/graphsage_test.parquet"
+    },
+    {
+      "name": "random_forest_no_vb_in_range",
+      "root": "../../tfm-dependency-baseline2/results/baseline2-v2_2-no-vb-in-range-seeds",
+      "prediction_pattern": "seed_{seed}/b2_1_random_forest/predictions/test.parquet"
+    },
+    {
+      "name": "xgboost_no_vb_in_range",
+      "root": "../../tfm-dependency-baseline2/results/baseline2-v2_2-no-vb-in-range-seeds",
+      "prediction_pattern": "seed_{seed}/b2_2_xgboost/predictions/test.parquet"
+    }
+  ],
+  "comparisons": [
+    {
+      "name": "principal_xgboost_minus_random_forest",
+      "left": "random_forest",
+      "right": "xgboost"
+    },
+    {
+      "name": "principal_b3_minus_random_forest",
+      "left": "random_forest",
+      "right": "b3"
+    },
+    {
+      "name": "principal_graphsage_minus_random_forest",
+      "left": "random_forest",
+      "right": "graphsage"
+    },
+    {
+      "name": "principal_b3_minus_xgboost",
+      "left": "xgboost",
+      "right": "b3"
+    },
+    {
+      "name": "principal_graphsage_minus_xgboost",
+      "left": "xgboost",
+      "right": "graphsage"
+    },
+    {
+      "name": "principal_graphsage_minus_b3",
+      "left": "b3",
+      "right": "graphsage"
+    },
+    {
+      "name": "ablation_xgboost_minus_random_forest",
+      "left": "random_forest_no_vb_in_range",
+      "right": "xgboost_no_vb_in_range"
+    },
+    {
+      "name": "ablation_b3_minus_random_forest",
+      "left": "random_forest_no_vb_in_range",
+      "right": "b3_no_vb_in_range"
+    },
+    {
+      "name": "ablation_graphsage_minus_random_forest",
+      "left": "random_forest_no_vb_in_range",
+      "right": "graphsage_no_vb_in_range"
+    },
+    {
+      "name": "ablation_b3_minus_xgboost",
+      "left": "xgboost_no_vb_in_range",
+      "right": "b3_no_vb_in_range"
+    },
+    {
+      "name": "ablation_graphsage_minus_xgboost",
+      "left": "xgboost_no_vb_in_range",
+      "right": "graphsage_no_vb_in_range"
+    },
+    {
+      "name": "ablation_graphsage_minus_b3",
+      "left": "b3_no_vb_in_range",
+      "right": "graphsage_no_vb_in_range"
+    },
+    {
+      "name": "b3_with_minus_without_vb_in_range",
+      "left": "b3_no_vb_in_range",
+      "right": "b3"
+    },
+    {
+      "name": "graphsage_with_minus_without_vb_in_range",
+      "left": "graphsage_no_vb_in_range",
+      "right": "graphsage"
+    },
+    {
+      "name": "random_forest_with_minus_without_vb_in_range",
+      "left": "random_forest_no_vb_in_range",
+      "right": "random_forest"
+    },
+    {
+      "name": "xgboost_with_minus_without_vb_in_range",
+      "left": "xgboost_no_vb_in_range",
+      "right": "xgboost"
+    }
+  ]
+}

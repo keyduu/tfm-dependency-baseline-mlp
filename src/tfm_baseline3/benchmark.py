@@ -31,7 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=Path("data/_local/processed/dataset_mvd_v2.parquet"),
+        default=Path("data/_local/processed/dataset_mvd_v2_2.parquet"),
     )
     parser.add_argument(
         "--output-dir",
@@ -41,6 +41,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seeds", nargs="+", type=int, default=list(DEFAULT_SEEDS))
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     parser.add_argument("--aggregate-only", action="store_true")
+    parser.add_argument(
+        "--exclude-vb-in-range",
+        action="store_true",
+        help="Run the opt-in ablation without the vb_in_range feature",
+    )
     return parser
 
 
@@ -54,20 +59,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         run_dir = args.output_dir / f"seed-{seed}"
         if not args.aggregate_only:
             print(f"[{number}/{len(args.seeds)}] B3 seed={seed}", file=sys.stderr, flush=True)
+            command = [
+                sys.executable,
+                "-m",
+                "tfm_baseline3.cli",
+                "--dataset",
+                str(args.dataset),
+                "--output-dir",
+                str(run_dir),
+                "--seed",
+                str(seed),
+                "--device",
+                args.device,
+            ]
+            if args.exclude_vb_in_range:
+                command.append("--exclude-vb-in-range")
             completed = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "tfm_baseline3.cli",
-                    "--dataset",
-                    str(args.dataset),
-                    "--output-dir",
-                    str(run_dir),
-                    "--seed",
-                    str(seed),
-                    "--device",
-                    args.device,
-                ],
+                command,
                 stdout=subprocess.DEVNULL,
                 check=False,
             )
@@ -77,7 +85,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not metrics_path.is_file():
             raise FileNotFoundError(f"Missing seed result: {metrics_path}")
         reports[seed] = json.loads(metrics_path.read_text(encoding="utf-8"))
+        expected_vb_in_range = not args.exclude_vb_in_range
+        if reports[seed]["features"]["vb_in_range_included"] is not expected_vb_in_range:
+            raise ValueError(
+                f"B3 seed {seed} does not match the requested vb_in_range feature protocol"
+            )
 
+    feature_report = next(iter(reports.values()))["features"]
     payload = {
         "baseline": "B3",
         "model": "EdgeMLP",
@@ -87,6 +101,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             "rows": int(len(data)),
         },
         "protocol": {"seeds": args.seeds, "paired_with_graphsage": True},
+        "features": {
+            "numeric": feature_report["numeric"],
+            "categorical": feature_report["categorical"],
+            "vb_in_range_included": feature_report["vb_in_range_included"],
+            "package_identity_excluded": feature_report["package_identity_excluded"],
+            "uses_graph": feature_report["uses_graph"],
+        },
         "aggregate": {
             split: {
                 metric: _summary([report[split][metric] for report in reports.values()])

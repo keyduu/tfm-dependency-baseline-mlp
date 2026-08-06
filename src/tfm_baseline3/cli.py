@@ -18,7 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=Path("data/_local/processed/dataset_mvd_v2.parquet"),
+        default=Path("data/_local/processed/dataset_mvd_v2_2.parquet"),
     )
     parser.add_argument(
         "--output-dir",
@@ -34,6 +34,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--patience", type=int, default=15)
     parser.add_argument("--temporal-batch-size", type=int, default=256)
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
+    parser.add_argument(
+        "--exclude-vb-in-range",
+        action="store_true",
+        help="Run the opt-in ablation without the vb_in_range feature",
+    )
     return parser
 
 
@@ -55,6 +60,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             patience=args.patience,
             temporal_batch_size=args.temporal_batch_size,
             device=args.device,
+            include_vb_in_range=not args.exclude_vb_in_range,
         ),
         dataset_metadata={
             "path": str(args.dataset),

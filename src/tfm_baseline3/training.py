@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import json
 import os
-import platform
 import random
 import time
 from dataclasses import asdict, dataclass
@@ -23,11 +22,12 @@ from torch import nn
 from tfm_baseline3.evaluation import choose_threshold, classification_metrics
 from tfm_baseline3.features import (
     CATEGORICAL_FEATURES,
-    NUMERIC_FEATURES,
     build_transformer,
+    numeric_feature_names,
     raw_edge_features,
 )
 from tfm_baseline3.model import EdgeMLPClassifier
+from tfm_baseline3.provenance import runtime_environment, synchronize
 from tfm_baseline3.schema import SPLITS, validate_dataset
 
 
@@ -42,6 +42,7 @@ class TrainingConfig:
     patience: int = 15
     temporal_batch_size: int = 256
     device: str = "auto"
+    include_vb_in_range: bool = True
 
 
 def train_experiment(
@@ -59,8 +60,15 @@ def train_experiment(
     positions = {
         split: np.flatnonzero(data["split"].eq(split).to_numpy()).tolist() for split in SPLITS
     }
-    raw_features = raw_edge_features(data)
-    transformer = build_transformer()
+    numeric_features = numeric_feature_names(
+        include_vb_in_range=config.include_vb_in_range
+    )
+    raw_features = raw_edge_features(
+        data, include_vb_in_range=config.include_vb_in_range
+    )
+    transformer = build_transformer(
+        include_vb_in_range=config.include_vb_in_range
+    )
     transformer.fit(raw_features.iloc[positions["train"]])
     feature_values = transformer.transform(raw_features).astype("float32")
     features = torch.from_numpy(feature_values).to(device)
@@ -175,19 +183,20 @@ def train_experiment(
         "model": "EdgeMLP",
         "config": asdict(config),
         "dataset": dataset_metadata or {"rows": int(len(data))},
-        "environment": {
-            "python": platform.python_version(),
-            "numpy": np.__version__,
-            "pandas": pd.__version__,
-            "packaging": packaging_version,
-            "scikit_learn": sklearn.__version__,
-            "torch": torch.__version__,
-            "device": str(device),
-        },
+        "environment": runtime_environment(
+            device=device,
+            libraries={
+                "numpy": np.__version__,
+                "pandas": pd.__version__,
+                "packaging": packaging_version,
+                "scikit_learn": sklearn.__version__,
+                "torch": torch.__version__,
+            },
+        ),
         "features": {
-            "numeric": NUMERIC_FEATURES,
+            "numeric": numeric_features,
             "categorical": CATEGORICAL_FEATURES,
-            "vb_in_range_included": True,
+            "vb_in_range_included": config.include_vb_in_range,
             "package_identity_excluded": True,
             "uses_graph": False,
         },
@@ -257,11 +266,13 @@ def _predict(
 ) -> tuple[np.ndarray, float]:
     model.eval()
     risks: list[np.ndarray] = []
+    synchronize(device)
     started = time.perf_counter()
     with torch.no_grad():
         for batch in _temporal_batches(data, positions, batch_size):
             index = torch.tensor(batch, dtype=torch.long, device=device)
             risks.append(torch.sigmoid(model(features[index])).cpu().numpy())
+    synchronize(device)
     return np.concatenate(risks), time.perf_counter() - started
 
 
