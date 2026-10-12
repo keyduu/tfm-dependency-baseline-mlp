@@ -347,6 +347,9 @@ def analyse(
             },
             "paired_seed_test": {
                 "test": "two-sided Wilcoxon signed-rank over right-minus-left seed deltas",
+                "zero_method": "wilcox: zero differences are excluded from the ranks",
+                "method_selection": "exact without zeros; normal approximation with zeros",
+                "continuity_correction": "applied only with the normal approximation",
                 "multiple_testing": "Holm step-down over all comparison-metric hypotheses",
                 "family_size": len(hypotheses),
             },
@@ -612,12 +615,31 @@ def _precision_at_k(
     return float(np.mean(y_true[order[: min(k, len(y_true))]]))
 
 
-def _wilcoxon(deltas: np.ndarray) -> dict[str, float | str]:
+def _wilcoxon(deltas: np.ndarray) -> dict[str, float | str | bool]:
     if np.allclose(deltas, 0.0, atol=1e-15):
-        return {"statistic": 0.0, "pvalue": 1.0, "method": "all_deltas_zero"}
-    method = "exact" if not np.any(np.isclose(deltas, 0.0, atol=1e-15)) else "approx"
-    result = wilcoxon(deltas, alternative="two-sided", method=method)
-    return {"statistic": float(result.statistic), "pvalue": float(result.pvalue), "method": method}
+        return {
+            "statistic": 0.0,
+            "pvalue": 1.0,
+            "method": "all_deltas_zero",
+            "zero_method": "wilcox",
+            "correction": False,
+        }
+    has_zero = bool(np.any(np.isclose(deltas, 0.0, atol=1e-15)))
+    method = "approx" if has_zero else "exact"
+    result = wilcoxon(
+        deltas,
+        alternative="two-sided",
+        zero_method="wilcox",
+        correction=has_zero,
+        method=method,
+    )
+    return {
+        "statistic": float(result.statistic),
+        "pvalue": float(result.pvalue),
+        "method": method,
+        "zero_method": "wilcox",
+        "correction": has_zero,
+    }
 
 
 def _delta_summary(

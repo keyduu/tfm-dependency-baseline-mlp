@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tfm-dependency-baseline3"
-version = "0.2.0"
+version = "0.2.1"
 description = "Baseline neuronal B3 MLP para incompatibilidades entre dependencias Python"
 readme = "README.md"
 authors = [{ name = "Augusto Javier González Rodríguez" }]

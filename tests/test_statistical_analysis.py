@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from tfm_baseline3.statistical_analysis import (
+    _wilcoxon,
     calibration_table,
     holm_adjust,
     main,
@@ -69,6 +70,28 @@ def test_paired_bootstrap_is_deterministic() -> None:
 
 def test_holm_adjustment_is_monotone_in_sorted_order() -> None:
     assert holm_adjust([0.01, 0.04, 0.03]) == pytest.approx([0.03, 0.06, 0.06])
+
+
+def test_wilcoxon_uses_normal_approximation_with_continuity_correction_for_zeros() -> None:
+    result = _wilcoxon(np.asarray([0.1, 0.0, -0.05, 0.2]))
+
+    assert result == {
+        "statistic": 1.0,
+        "pvalue": pytest.approx(0.4226780741706355),
+        "method": "approx",
+        "zero_method": "wilcox",
+        "correction": True,
+    }
+
+
+def test_ten_same_sign_deltas_reach_exact_floor_with_96_holm_tests() -> None:
+    result = _wilcoxon(np.arange(1.0, 11.0))
+
+    assert result["method"] == "exact"
+    assert result["correction"] is False
+    assert result["pvalue"] == pytest.approx(2 / 2**10)
+    adjusted = holm_adjust([float(result["pvalue"])] * 3 + [1.0] * 93)
+    assert adjusted[:3] == pytest.approx([0.1875] * 3)
 
 
 def test_cli_writes_reproducible_tables(tmp_path) -> None:

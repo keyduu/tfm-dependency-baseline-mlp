@@ -3,7 +3,9 @@
 B3 es un MLP sobre aristas que utiliza las mismas características locales y el
 mismo protocolo temporal que GraphSAGE, pero sin representación de grafo ni
 propagación de mensajes. Es un control neuronal más exigente que B2 y permite
-atribuir a la estructura la diferencia `GraphSAGE - B3`.
+comparar las configuraciones `GraphSAGE - B3`. Sus arquitecturas también
+difieren, por lo que esa diferencia no identifica un efecto causal exclusivo
+de la estructura del grafo.
 
 ## Protocolo
 
@@ -82,6 +84,22 @@ corrección de Holm sobre la familia completa de comparación por métrica.
 
 Las salidas son `analysis.json` y tablas CSV para métricas, calibración,
 comparaciones, bootstrap y contrastes Wilcoxon-Holm.
+
+### Ajuste estadístico v0.2.1
+
+Esta versión incorpora el ajuste del apéndice A.4 de la memoria sobre la base
+v0.2.0: exclusión de diferencias nulas (`zero_method="wilcox"`) y aproximación
+normal con corrección de continuidad cuando existen ceros. Sin ceros se solicita
+`method="exact"`; esta opción no garantiza exactitud si hay empates en los rangos.
+El informe registra las opciones empleadas y las pruebas cubren el caso con ceros
+y el suelo de Holm de 0,1875 para diez diferencias del mismo signo y 96 contrastes.
+
+No se modifican entrenamientos, modelos, predicciones, etiquetas ni la familia de
+contrastes. En la comparación principal GraphSAGE–B3, el cierre usa
+`p = 0.0580240199462214` (con corrección), no `0.050612432239184685` (sin ella).
+El intervalo de la diferencia media entre semillas es t de Student, distinto de
+los intervalos bootstrap por pares. No hace falta aplicar el parche adicional
+de la memoria cuando se utiliza v0.2.1.
 
 ## Datos y reproducibilidad
 
